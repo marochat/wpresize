@@ -4,6 +4,7 @@
 import argparse
 import re, os
 from PIL import Image
+import pyheif
 import piexif
 from logging import getLogger, StreamHandler, DEBUG, INFO
 
@@ -42,6 +43,8 @@ def main():
             exif = im.info['exif']
             exif_dict = piexif.load(exif)
             logger.debug('name: %s, ext: %s (%d x %d)' % (bn, ext, w, h))
+            logger.debug(exif_dict.keys())
+            #print(exif_dict.__class__)
             del exif_dict['GPS']
             exif = piexif.dump(exif_dict)
             if w > h and w > maxl:
@@ -54,6 +57,33 @@ def main():
             rim = im.resize([w1, h1], Image.BICUBIC)
             logger.debug(outfile)
             rim.save(outfile, quality=args.quality, exif=exif)
+        if re.match('^\.heic$', ext.lower()):
+            logger.debug('heic file')
+            outfile = os.path.join(pn, bn1 + '.jpeg')
+            heif_file = pyheif.read(fn)
+            im = Image.frombytes(
+                heif_file.mode,
+                heif_file.size,
+                heif_file.data,
+                'raw',
+                heif_file.mode,
+                heif_file.stride,
+            )
+            w, h = im.size
+            if w > h and w > maxl:
+                w1 = maxl
+                h1 = int(maxl * h / w)
+            elif h > w and h > maxl:
+                h1 = maxl
+                w1 = int(maxl * w / h)
+            rim = im.resize([w1, h1], Image.BICUBIC)
+            #print(heif_file.metadata[0]['data'][2])
+            exif_dict = piexif.load(heif_file.metadata[0]['data'])
+            del exif_dict['GPS']
+            logger.debug(exif_dict.keys())
+            exif = piexif.dump(exif_dict)
+            #print(exif)
+            rim.save(outfile, 'JPEG', quality=args.quality, exif=exif)
 
 if __name__ == '__main__':
     main()
