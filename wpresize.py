@@ -46,7 +46,10 @@ def main():
             logger.debug(exif_dict.keys())
             #print(exif_dict.__class__)
             del exif_dict['GPS']
+            logger.debug(exif_dict['0th'])
             exif = piexif.dump(exif_dict)
+            w1 = w
+            h1 = h
             if w > h and w > maxl:
                 w1 = maxl
                 h1 = int(maxl * h / w)
@@ -70,6 +73,7 @@ def main():
                 heif_file.stride,
             )
             w, h = im.size
+            w1, h1 = w, h
             if w > h and w > maxl:
                 w1 = maxl
                 h1 = int(maxl * h / w)
@@ -80,7 +84,10 @@ def main():
             #print(heif_file.metadata[0]['data'][2])
             exif_dict = piexif.load(heif_file.metadata[0]['data'])
             del exif_dict['GPS']
+            # Exifの回転情報をノーマルにする
+            exif_dict['0th'][274] = 1 # Exifの回転情報込みで変換されるようなので、Exifの回転情報で余計に回転が加わるため
             logger.debug(exif_dict.keys())
+            logger.debug(exif_dict['0th'])
             exif = piexif.dump(exif_dict)
             #print(exif)
             rim.save(outfile, 'JPEG', quality=args.quality, exif=exif)
